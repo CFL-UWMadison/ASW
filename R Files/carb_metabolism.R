@@ -35,15 +35,15 @@ carb.bookkkeep <- function(datetime = datetime,ph = ph, t = t, lat = lat, salini
     gas.flux <- (co2_sat - co2) * (k.gas/48) / zmix 
     
     #remove the component of delta.do that is due to gas flux
-    delta.dic <- diff(dic)
+    delta.dic <- diff(dic) * (-1)
     delta.dic.metab <- delta.dic - gas.flux[1:(length(gas.flux)-1)]
-    delta.dic.metab <- delta.dic.metab * (-1)
+    delta.dic.metab <- delta.dic.metab
     
     nep.day <- delta.dic.metab[dayI]
     nep.night <- delta.dic.metab[nightI]
     
     R <- mean(nep.night,na.rm=TRUE) * nobs
-    NEP <- mean(delta.dic,na.rm=TRUE) * nobs
+    NEP <- mean(delta.dic.metab,na.rm=TRUE) * nobs
     GPP <- mean(nep.day, na.rm = TRUE) * sum(dayI) - mean(nep.night, na.rm = TRUE) * sum(dayI)
     metab <- data.frame("GPP_mg_l_hr" = GPP/nobs*2*12.0107, 
                         "R_mg_l_hr" = R/nobs*2*12.0107, 
