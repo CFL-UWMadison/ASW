@@ -5,9 +5,18 @@ library(LakeMetabolizer)
 library(lubridate)
 
 #### functions
+
 carb.bookkkeep <- function(datetime = datetime,ph = ph, t = t, lat = lat, salinity = salinity, alk = alk, zmix=zmix) {
     # Simple bookkeep estimation of metabolism from high frequency pH data
-    # model does not account for atmospheric exchange
+    # model accounts for static wind and zmix gas exchange
+    # datetime: vector of date times (format = YYYY-MM-DD HH:MM:SS)
+    # ph: vector of ph values equal to length of datetime vector
+    # t: vector of temperature values (degrees C) equal to length of datetime vector
+    # lat: latitude of sample location (used to calculate atmospheric pressure)
+    # salinity: salinity of water
+    # alk: alkalinity of water in ueq/L HCO3
+    # zmix: estimate of zmix for sampling period
+
     nobs <- length(ph)
     start.time <- floor_date(datetime[1],unit = "hour")
     end.time <- ceiling_date(datetime[nobs],unit= "hour")
