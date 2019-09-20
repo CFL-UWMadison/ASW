@@ -8,7 +8,7 @@ library(lubridate)
 
 carb.bookkkeep <- function(datetime = datetime,ph = ph, t = t, lat = lat, salinity = salinity, alk = alk, zmix=zmix) {
     # Simple bookkeep estimation of metabolism from high frequency pH data
-    # model accounts for static wind and zmix gas exchange
+    # model accounts gas exchange assuming static wind and zmix
     # datetime: vector of date times (format = YYYY-MM-DD HH:MM:SS)
     # ph: vector of ph values equal to length of datetime vector
     # t: vector of temperature values (degrees C) equal to length of datetime vector
@@ -18,6 +18,7 @@ carb.bookkkeep <- function(datetime = datetime,ph = ph, t = t, lat = lat, salini
     # zmix: estimate of zmix for sampling period
 
     nobs <- length(ph)
+    #extract data with 30min time step from the original time series
     start.time <- floor_date(datetime[1],unit = "hour")
     end.time <- ceiling_date(datetime[nobs],unit= "hour")
     datetime.30min <- seq(from=start.time,to=end.time,by="30 min")
@@ -26,11 +27,15 @@ carb.bookkkeep <- function(datetime = datetime,ph = ph, t = t, lat = lat, salini
     ph <- ph[samples]
     t <- t[samples]
     nobs <- length(ph)
+    
+    #estimate carbon concentrations
     TA <- convert(alk/1000/1000,"conc","molar2molin",S=salinity,t=t) #convert to molin
     ae <- aquaenv(t = t,S = salinity,TA = TA,pH = ph,SumCO2 = NULL,lat = lat)
     dic <- as.numeric(convert(ae$SumCO2,"conc","molin2molar",S=salinity,t=t))*1e6 #umol/L
     co2 <- as.numeric(convert(ae$CO2,"conc","molin2molar",S=salinity,t=t))*1e6 #ummol/L
     co2_sat <- as.numeric(convert(ae$CO2_sat,"conc","molin2molar",S=salinity,t=t))*1e6 #umol/L
+    
+    #identify day and night time periods
     irr <- as.integer(is.day(datetime, lat = lat))
     dayI <- irr == 1L
     nightI <- irr == 0L
@@ -43,13 +48,15 @@ carb.bookkkeep <- function(datetime = datetime,ph = ph, t = t, lat = lat, salini
     #normalized to z.mix, del_concentration/timestep (e.g., mg/L/10min)
     gas.flux <- (co2_sat - co2) * (k.gas/48) / zmix 
     
-    #remove the component of delta.do that is due to gas flux
-    delta.dic <- diff(dic) * (-1)
+    #remove the component of delta.dic that is due to gas flux
+    delta.dic <- diff(dic) * (-1) #multiply by -1 so changes are same direction as O2 method
     delta.dic.metab <- delta.dic - gas.flux[1:(length(gas.flux)-1)]
     
+    #calculate day and night nep values
     nep.day <- delta.dic.metab[dayI]
     nep.night <- delta.dic.metab[nightI]
     
+    #estimate metabolism in mgC/L/hr for the entire deployment period
     R <- mean(nep.night,na.rm=TRUE) * nobs
     NEP <- mean(delta.dic.metab,na.rm=TRUE) * nobs
     GPP <- mean(nep.day, na.rm = TRUE) * sum(dayI) - mean(nep.night, na.rm = TRUE) * sum(dayI)
