@@ -19,9 +19,9 @@ carb.bookkkeep <- function(datetime = datetime,ph = ph, t = t, lat = lat, salini
     nobs <- length(ph)
     TA <- convert(alk/1000/1000,"conc","molar2molin",S=salinity,t=t) #convert to molin
     ae <- aquaenv(t = t,S = salinity,TA = TA,pH = ph,SumCO2 = NULL,lat = lat)
-    dic <- as.numeric(convert(ae$SumCO2,"conc","molin2molar",S=salinity,t=t))*1e6
-    co2 <- as.numeric(convert(ae$CO2,"conc","molin2molar",S=salinity,t=t))*1e6
-    co2_sat <- as.numeric(convert(ae$CO2_sat,"conc","molin2molar",S=salinity,t=t))*1e6
+    dic <- as.numeric(convert(ae$SumCO2,"conc","molin2molar",S=salinity,t=t))*1e6 #umol/L
+    co2 <- as.numeric(convert(ae$CO2,"conc","molin2molar",S=salinity,t=t))*1e6 #ummol/L
+    co2_sat <- as.numeric(convert(ae$CO2_sat,"conc","molin2molar",S=salinity,t=t))*1e6 #umol/L
     irr <- as.integer(is.day(datetime, lat = lat))
     dayI <- irr == 1L
     nightI <- irr == 0L
@@ -37,7 +37,6 @@ carb.bookkkeep <- function(datetime = datetime,ph = ph, t = t, lat = lat, salini
     #remove the component of delta.do that is due to gas flux
     delta.dic <- diff(dic) * (-1)
     delta.dic.metab <- delta.dic - gas.flux[1:(length(gas.flux)-1)]
-    delta.dic.metab <- delta.dic.metab
     
     nep.day <- delta.dic.metab[dayI]
     nep.night <- delta.dic.metab[nightI]
@@ -45,9 +44,9 @@ carb.bookkkeep <- function(datetime = datetime,ph = ph, t = t, lat = lat, salini
     R <- mean(nep.night,na.rm=TRUE) * nobs
     NEP <- mean(delta.dic.metab,na.rm=TRUE) * nobs
     GPP <- mean(nep.day, na.rm = TRUE) * sum(dayI) - mean(nep.night, na.rm = TRUE) * sum(dayI)
-    metab <- data.frame("GPP_mg_l_hr" = GPP/nobs*2*12.0107, 
-                        "R_mg_l_hr" = R/nobs*2*12.0107, 
-                        "NEP_mg_l_hr" = NEP/nobs*2*12.0107)
+    metab <- data.frame("GPP_mg_l_hr" = GPP/nobs*2*12.0107/1000, 
+                        "R_mg_l_hr" = R/nobs*2*12.0107/1000, 
+                        "NEP_mg_l_hr" = NEP/nobs*2*12.0107/1000)
     return(metab)
 }
 
