@@ -74,8 +74,8 @@ datetime <- ymd_hms(paste(data$sampledate,data$sampletime,sep=" "))
 ph <- data$ph
 t <- data$do_wtemp
 lat <- 44
-salinity <- 0.3 
-alk <- 3761
+salinity <- 0.1 
+alk <- 4 #Trout Lake 742, Sparkling Lake 637, Trout Bog 4
 zmix = 7
 
 #run the model
