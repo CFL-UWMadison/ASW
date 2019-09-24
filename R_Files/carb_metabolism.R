@@ -3,6 +3,7 @@ library(tidyverse)
 library(AquaEnv)
 library(LakeMetabolizer)
 library(lubridate)
+library(data.table)
 
 #### functions
 
@@ -19,13 +20,10 @@ carb.bookkkeep <- function(datetime = datetime,ph = ph, t = t, lat = lat, salini
 
     nobs <- length(ph)
     #extract data with 30min time step from the original time series
-    start.time <- floor_date(datetime[1],unit = "hour")
-    end.time <- ceiling_date(datetime[nobs],unit= "hour")
-    datetime.30min <- seq(from=start.time,to=end.time,by="30 min")
-    samples <- datetime %in% datetime.30min
-    datetime <- datetime[samples]
-    ph <- ph[samples]
-    t <- t[samples]
+    samples <- get_30min_obs(datetime,nobs)
+    datetime <- samples$datetime
+    ph <- ph[samples$obs]
+    t <- t[samples$obs]
     nobs <- length(ph)
     
     #estimate carbon concentrations
@@ -66,16 +64,28 @@ carb.bookkkeep <- function(datetime = datetime,ph = ph, t = t, lat = lat, salini
     return(metab)
 }
 
+get_30min_obs <- function(datetime = datetime, nobs = nobs) {
+    temp <- data.table(datetime=datetime,obs = seq(1,length(datetime)))
+    start.time <- ceiling_date(datetime[1],unit = "hour")
+    end.time <- ceiling_date(datetime[nobs],unit= "hour")
+    datetime.30min <- seq(from=start.time,to=end.time,by="30 min")
+    temp30 <- data.table(datetime=datetime.30min,obs30 = seq(1:length(datetime.30min)))
+    setkey(temp, datetime)
+    setkey(temp30, datetime)
+    out <- temp[temp30, roll='nearest']
+    return(out)
+}
+
 # get data from sensor deployment
-data <- read_csv("ME_ph.csv")
+data <- read.csv("ME_PH.csv",header=TRUE)
 
 # organize data for metabolism estimates
-datetime <- ymd_hms(paste(data$sampledate,data$sampletime,sep=" "))
+datetime <- round_date(ymd_hms(paste(data[,1],data$sampletime,sep=" ")),"min")
 ph <- data$ph
 t <- data$do_wtemp
 lat <- 44
 salinity <- 0.1 
-alk <- 4 #Trout Lake 742, Sparkling Lake 637, Trout Bog 4
+alk <- 3500 #Trout Lake 742, Sparkling Lake 637, Trout Bog 4
 zmix = 7
 
 #run the model
