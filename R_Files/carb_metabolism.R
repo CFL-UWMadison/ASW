@@ -4,6 +4,8 @@ library(AquaEnv)
 library(LakeMetabolizer)
 library(lubridate)
 library(data.table)
+library(gridExtra)
+library(cowplot)
 
 #### functions
 
@@ -77,16 +79,41 @@ get_30min_obs <- function(datetime = datetime, nobs = nobs) {
 }
 
 # get data from sensor deployment
-data <- read.csv("ME_PH.csv",header=TRUE)
+data <- read.delim("sensor_data/testdata.txt",header=FALSE,sep=",")
 
+#plot data time series
+colnames(data) <- c("datetime","lux","ph","temp","therm")
+data <- data %>% 
+    mutate(datetime = ymd_hms(datetime)) %>% 
+    mutate(datetime = round_date(datetime,"min"))
+data_long <- data %>% gather(value = "value",key= "parameter",-datetime)
+
+p1 <- ggplot(data = data_long %>% filter(parameter == "temp" | parameter == "therm"),
+             aes(x=datetime,y=value,color=parameter)) + geom_line() + geom_point() +
+    labs(x="",y="Temperature",color="Probe")
+p2 <- ggplot(data = data_long %>% filter(parameter == "ph"),
+             aes(x=datetime,y=value)) + geom_point() + geom_line() +
+    labs(x="",y="pH")
+p3 <- ggplot(data = data_long %>% filter(parameter == "lux"),
+             aes(x = datetime,y=value)) + geom_point() + geom_line() +
+    labs(x = "Date Time",y= "Lux")
+
+plots <- plot_grid(p1,p2,p3,nrow=3,align="v",axis="rl")
+plots
+    
 # organize data for metabolism estimates
-datetime <- round_date(ymd_hms(paste(data[,1],data$sampletime,sep=" ")),"min")
+datetime <- data$datetime
 ph <- data$ph
-t <- data$do_wtemp
-lat <- 44
+t <- data$temp # digital temperature
+lat <- 46.044
 salinity <- 0.1 
 alk <- 3500 #Trout Lake 742, Sparkling Lake 637, Trout Bog 4
-zmix = 7
+zmix = 7 
+
+ 
+
+
+
 
 #run the model
 out <- carb.bookkkeep(datetime = datetime,
