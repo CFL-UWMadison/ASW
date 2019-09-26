@@ -79,7 +79,7 @@ get_30min_obs <- function(datetime = datetime, nobs = nobs) {
 }
 
 # get data from sensor deployment
-data <- read.delim("sensor_data/AWS_15.txt",header=FALSE,sep=",")
+data <- read.delim("sensor_data/testdata.txt",header=FALSE,sep=",",stringsAsFactors = FALSE)
 
 #plot data time series
 colnames(data) <- c("datetime","lux","ph","temp","therm")
@@ -108,9 +108,9 @@ datetime <- data$datetime
 ph <- data$ph
 t <- data$temp # digital temperature
 lat <- 46.044
-salinity <- 0.1 
-alk <- 3500 #Trout Lake 742, Sparkling Lake 637, Trout Bog 4
-zmix = 7 #Trout Bog 2m, Sparkling 8m, Trout 11m
+salinity <- 0.3 
+alk <- 742 #Trout Lake 742, Sparkling Lake 637, Trout Bog 4
+zmix = 11 #Trout Bog 2m, Sparkling 8m, Trout 11m
 
  
 
