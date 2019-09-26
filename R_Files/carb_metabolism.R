@@ -41,7 +41,7 @@ carb.bookkkeep <- function(datetime = datetime,ph = ph, t = t, lat = lat, salini
     nightI <- irr == 0L
     
     #Gas fluxes
-    wnd <- wind.scale.base(wnd = 4,wnd.z = 2)
+    wnd <- wind.scale.base(wnd = 6,wnd.z = 2)
     k600 <- k.cole.base(wnd)
     k.gas = k600.2.kGAS.base(k600 = k600,temperature = t,gas =  'CO2')
     #gas flux out is negative
@@ -108,7 +108,7 @@ t <- data$temp # digital temperature
 lat <- 46.044
 salinity <- 0.1 
 alk <- 3500 #Trout Lake 742, Sparkling Lake 637, Trout Bog 4
-zmix = 7 
+zmix = 7 #Trout Bog 2m, Sparkling 8m, Trout 11m
 
  
 
