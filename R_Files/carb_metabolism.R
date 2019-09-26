@@ -3,6 +3,9 @@ library(tidyverse)
 library(AquaEnv)
 library(LakeMetabolizer)
 library(lubridate)
+library(data.table)
+library(gridExtra)
+library(cowplot)
 
 #### functions
 
@@ -19,13 +22,10 @@ carb.bookkkeep <- function(datetime = datetime,ph = ph, t = t, lat = lat, salini
 
     nobs <- length(ph)
     #extract data with 30min time step from the original time series
-    start.time <- floor_date(datetime[1],unit = "hour")
-    end.time <- ceiling_date(datetime[nobs],unit= "hour")
-    datetime.30min <- seq(from=start.time,to=end.time,by="30 min")
-    samples <- datetime %in% datetime.30min
-    datetime <- datetime[samples]
-    ph <- ph[samples]
-    t <- t[samples]
+    samples <- get_30min_obs(datetime,nobs)
+    datetime <- samples$datetime
+    ph <- ph[samples$obs]
+    t <- t[samples$obs]
     nobs <- length(ph)
     
     #estimate carbon concentrations
@@ -41,7 +41,7 @@ carb.bookkkeep <- function(datetime = datetime,ph = ph, t = t, lat = lat, salini
     nightI <- irr == 0L
     
     #Gas fluxes
-    wnd <- wind.scale.base(wnd = 4,wnd.z = 2)
+    wnd <- wind.scale.base(wnd = 6,wnd.z = 2)
     k600 <- k.cole.base(wnd)
     k.gas = k600.2.kGAS.base(k600 = k600,temperature = t,gas =  'CO2')
     #gas flux out is negative
@@ -66,17 +66,54 @@ carb.bookkkeep <- function(datetime = datetime,ph = ph, t = t, lat = lat, salini
     return(metab)
 }
 
-# get data from sensor deployment
-data <- read_csv("ME_ph.csv")
+get_30min_obs <- function(datetime = datetime, nobs = nobs) {
+    temp <- data.table(datetime=datetime,obs = seq(1,length(datetime)))
+    start.time <- ceiling_date(datetime[1],unit = "hour")
+    end.time <- ceiling_date(datetime[nobs],unit= "hour")
+    datetime.30min <- seq(from=start.time,to=end.time,by="30 min")
+    temp30 <- data.table(datetime=datetime.30min,obs30 = seq(1:length(datetime.30min)))
+    setkey(temp, datetime)
+    setkey(temp30, datetime)
+    out <- temp[temp30, roll='nearest']
+    return(out)
+}
 
+# get data from sensor deployment
+data <- read.delim("sensor_data/testdata.txt",header=FALSE,sep=",")
+
+#plot data time series
+colnames(data) <- c("datetime","lux","ph","temp","therm")
+data <- data %>% 
+    mutate(datetime = ymd_hms(datetime)) %>% 
+    mutate(datetime = round_date(datetime,"min"))
+data_long <- data %>% gather(value = "value",key= "parameter",-datetime)
+
+p1 <- ggplot(data = data_long %>% filter(parameter == "temp" | parameter == "therm"),
+             aes(x=datetime,y=value,color=parameter)) + geom_line() + geom_point() +
+    labs(x="",y="Temperature",color="Probe")
+p2 <- ggplot(data = data_long %>% filter(parameter == "ph"),
+             aes(x=datetime,y=value)) + geom_point() + geom_line() +
+    labs(x="",y="pH")
+p3 <- ggplot(data = data_long %>% filter(parameter == "lux"),
+             aes(x = datetime,y=value)) + geom_point() + geom_line() +
+    labs(x = "Date Time",y= "Lux")
+
+plots <- plot_grid(p1,p2,p3,nrow=3,align="v",axis="rl")
+plots
+    
 # organize data for metabolism estimates
-datetime <- ymd_hms(paste(data$sampledate,data$sampletime,sep=" "))
+datetime <- data$datetime
 ph <- data$ph
-t <- data$do_wtemp
-lat <- 44
+t <- data$temp # digital temperature
+lat <- 46.044
 salinity <- 0.1 
-alk <- 4 #Trout Lake 742, Sparkling Lake 637, Trout Bog 4
-zmix = 7
+alk <- 3500 #Trout Lake 742, Sparkling Lake 637, Trout Bog 4
+zmix = 7 #Trout Bog 2m, Sparkling 8m, Trout 11m
+
+ 
+
+
+
 
 #run the model
 out <- carb.bookkkeep(datetime = datetime,
