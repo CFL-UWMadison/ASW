@@ -13,5 +13,5 @@ void loop() {
   File dataFile = SD.open("testfile.txt", FILE_WRITE);
   dataFile.println("Some text on the SD card");
   dataFile.close(); //close the CSV file
-  delay(5000); //wait 5 seconds and do it again
+  delay(1000); //wait 5 seconds and do it again
 }

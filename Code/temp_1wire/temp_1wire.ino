@@ -15,7 +15,6 @@ DallasTemperature dallasTemp(&oneWire);
 void setup() {
   // Initialize the dallas temp sensor
   dallasTemp.begin();
-
   Serial.begin(9600);
 }
 
@@ -27,8 +26,8 @@ void loop() {
   Serial.print("tempRaw: "); Serial.println(tempRaw,2);
 
   float tempCorr = tempRaw - T0; //single point calibration correction
-  Serial.print("temp: "); Serial.println(tempCorr,2);
-  delay(5000);
+  Serial.print("dallasTemp: "); Serial.println(tempCorr,2);
+  delay(1000);
 
  
 }
