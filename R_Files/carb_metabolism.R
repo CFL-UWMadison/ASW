@@ -79,13 +79,15 @@ get_30min_obs <- function(datetime = datetime, nobs = nobs) {
 }
 
 # get data from sensor deployment
-data <- read.delim("sensor_data/testdata.txt",header=FALSE,sep=",")
+data <- read.delim("sensor_data/AWS_15.txt",header=FALSE,sep=",")
 
 #plot data time series
 colnames(data) <- c("datetime","lux","ph","temp","therm")
 data <- data %>% 
     mutate(datetime = ymd_hms(datetime)) %>% 
-    mutate(datetime = round_date(datetime,"min"))
+    mutate(datetime = round_date(datetime,"min")) %>% 
+    filter(datetime > ymd_hms("2019-09-25 14:00:00")) %>% 
+    filter(datetime < ymd_hms("2019-09-26 12:00:00"))
 data_long <- data %>% gather(value = "value",key= "parameter",-datetime)
 
 p1 <- ggplot(data = data_long %>% filter(parameter == "temp" | parameter == "therm"),
